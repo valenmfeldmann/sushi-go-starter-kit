@@ -1,5 +1,5 @@
 ,first_card_bot,sushi_go_client,sushi_go_client,b_v_sushi_go_client_card_aware_TEST1
-first_card_bot,0,0,1,0
-sushi_go_client,9,0,6,4
-sushi_go_client,9,4,0,2
-b_v_sushi_go_client_card_aware_TEST1,10,6,7,0
+first_card_bot,0,1,0,0
+sushi_go_client,9,0,7,2
+sushi_go_client,10,3,0,1
+b_v_sushi_go_client_card_aware_TEST1,10,8,9,0

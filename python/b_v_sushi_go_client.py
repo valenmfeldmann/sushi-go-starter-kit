@@ -156,180 +156,42 @@ class SushiGoClient:
                     for c in self.state.played_cards
                 )
 
-    # Priority lists keyed by (round, hand_phase).
-    # hand_phase is determined by turn number:
-    #   "early"  → turns 1–3  (big hand, build foundations)
-    #   "mid"    → turns 4–7  (hand thinning, commit to combos)
-    #   "late"   → turns 8–10 (last cards, take sure points)
-    PRIORITIES: dict[tuple[int, str], list[str]] = {
-        # ── Round 1: lay foundations ────────────────────────────────────────
-        (1, "early"): [
-            "Sashimi",        # 10 pts per set of 3 – start early
-            "Maki Roll (3)",  # chase maki majority
-            "Maki Roll (2)",
-            "Tempura",        # 5 pts per pair
-            "Wasabi",         # set up future nigiri
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Dumpling",
-            "Pudding",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (1, "mid"): [
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Tempura",        # complete pairs started in early
-            "Sashimi",
-            "Wasabi",
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Dumpling",
-            "Pudding",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (1, "late"): [
-            "Tempura",        # finish any open pair
-            "Squid Nigiri",   # sure points over unfinished combos
-            "Salmon Nigiri",
-            "Sashimi",
-            "Dumpling",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Pudding",
-            "Wasabi",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        # ── Round 2: push combos, shift toward nigiri ────────────────────────
-        (2, "early"): [
-            "Wasabi",         # grab wasabi before it's gone
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Tempura",
-            "Sashimi",
-            "Dumpling",
-            "Pudding",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (2, "mid"): [
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Wasabi",
-            "Tempura",
-            "Sashimi",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Dumpling",
-            "Pudding",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (2, "late"): [
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Tempura",        # only worth it if one card away from a pair
-            "Dumpling",
-            "Pudding",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Sashimi",
-            "Wasabi",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        # ── Round 3: pudding delta is decisive; take sure points ─────────────
-        (3, "early"): [
-            "Pudding",        # pudding delta can swing ±6 pts
-            "Wasabi",
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Tempura",
-            "Sashimi",
-            "Dumpling",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (3, "mid"): [
-            "Pudding",
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Wasabi",
-            "Dumpling",
-            "Maki Roll (3)",
-            "Tempura",
-            "Maki Roll (2)",
-            "Sashimi",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-        (3, "late"): [
-            "Pudding",
-            "Squid Nigiri",
-            "Salmon Nigiri",
-            "Dumpling",
-            "Tempura",
-            "Maki Roll (3)",
-            "Maki Roll (2)",
-            "Sashimi",
-            "Wasabi",
-            "Egg Nigiri",
-            "Maki Roll (1)",
-            "Chopsticks",
-        ],
-    }
-
-    def _hand_phase(self) -> str:
-        """Return the phase of the current hand based on turn number."""
-        turn = self.state.turn if self.state else 1
-        if turn <= 3:
-            return "early"
-        if turn <= 7:
-            return "mid"
-        return "late"
-
     def choose_card(self, hand: list[str]) -> int:
         """
         Choose which card to play.
 
-        Strategy adapts to both the current round (1–3) and the phase of the
-        hand (early / mid / late) so that the bot builds the right combos at
-        the right time and cashes in sure points as cards run out.
+        This is where you implement your AI strategy!
+        The default implementation uses a simple priority-based approach.
 
         Args:
-            hand: List of card names in your current hand
+            hand: List of card codes in your current hand
 
         Returns:
             Index of the card to play (0-based)
         """
-        # Always cash in wasabi immediately with the best available nigiri
+        # Simple priority-based strategy
+        priority = [
+            "Squid Nigiri",  # 3 points, or 9 with wasabi
+            "Salmon Nigiri",  # 2 points, or 6 with wasabi
+            "Maki Roll (3)",  # 3 maki rolls
+            "Maki Roll (2)",  # 2 maki rolls
+            "Tempura",  # 5 points per pair
+            "Sashimi",  # 10 points per set of 3
+            "Dumpling",  # Increasing value
+            "Wasabi",  # Triples next nigiri
+            "Egg Nigiri",  # 1 point, or 3 with wasabi
+            "Pudding",  # End game scoring
+            "Maki Roll (1)",  # 1 maki roll
+            "Chopsticks",  # Play 2 cards next turn
+        ]
+
+        # If we have wasabi, prioritize nigiri
         if self.state and self.state.has_unused_wasabi:
             for nigiri in ["Squid Nigiri", "Salmon Nigiri", "Egg Nigiri"]:
                 if nigiri in hand:
                     return hand.index(nigiri)
 
-        # Select the priority list for the current round + hand phase
-        round_num = self.state.round if self.state else 1
-        phase = self._hand_phase()
-        priority = self.PRIORITIES.get(
-            (round_num, phase),
-            self.PRIORITIES[(1, "early")],   # safe fallback
-        )
-
+        # Otherwise use priority list
         for card in priority:
             if card in hand:
                 return hand.index(card)
@@ -356,6 +218,7 @@ class SushiGoClient:
             if self.state:
                 self.state.played_cards = []
         elif message.startswith("GAME_END"):
+            print(f"FINAL_RESULT: {message}")  # <-- ADD THIS LINE
             print("Game over!")
             return False
         elif message.startswith("WAITING"):
@@ -410,15 +273,17 @@ class SushiGoClient:
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python b_v_sushi_go_client.py <game_id> <player_name>")
-        print("Example: python b_v_sushi_go_client.py abc123 MyBot")
+    if len(sys.argv) != 5:
+        print("Usage: python sushi_go_client.py <host> <port> <game_id> <player_name>")
+        print("Example: python sushi_go_client.py localhost 7878 abc123 MyBot")
         sys.exit(1)
 
-    game_id = sys.argv[1]
-    player_name = sys.argv[2]
+    host = sys.argv[1]
+    port = int(sys.argv[2])
+    game_id = sys.argv[3]
+    player_name = sys.argv[4]
 
-    client = SushiGoClient("localhost", 7878)
+    client = SushiGoClient(host, port)
     client.run(game_id, player_name)
 
 
