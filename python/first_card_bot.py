@@ -17,6 +17,8 @@ import socket
 import sys
 import time
 
+delay_multiplier = 0.001
+
 
 def main():
     if len(sys.argv) < 3:
@@ -121,6 +123,7 @@ def main():
             msg = recv()
 
             if msg.startswith("GAME_END"):
+                print(f"FINAL_RESULT: {msg}")  # <-- ADD THIS LINE
                 print("Game over!")
                 break
             elif msg.startswith("HAND"):
@@ -129,7 +132,7 @@ def main():
                 if not hand:
                     continue
                 delay = random.uniform(0.5, 2.5)
-                time.sleep(delay)
+                time.sleep(delay*delay_multiplier)
                 send("PLAY 0")
             # Ignore other messages (JOINED, GAME_START, ROUND_START, PLAYED, WAITING, OK, etc.)
 

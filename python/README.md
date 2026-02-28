@@ -1,72 +1,104 @@
-# Python Client
+# Sushi Go Starter Kit
 
-## Requirements
+Build a bot to play Sushi Go against other players on a networked game server.
 
-- Python 3.10+
-- Standard library only — no external packages needed
+## Game Rules
 
-## Files
+Sushi Go is a card-drafting game by Gamewright. Find the rules online or get a copy of the game!
 
-| File | Description |
-|------|-------------|
-| `sushi_go_client.py` | Full-featured client with state tracking and a priority-based strategy |
-| `first_card_bot.py` | Minimal bot (~30 lines of logic) that always plays the first card |
+## Quick Start
 
-## Usage
+### Prerequisites
 
-The two scripts have different argument orders:
+- **Python 3.10+** (no external packages needed), or
+- **Node.js 18+** (no npm dependencies needed)
+
+### Run the Demo Bot
 
 ```bash
-# first_card_bot.py — game_id and name first, host/port optional
-python first_card_bot.py <game_id> <player_name> [host] [port]
-python first_card_bot.py abc123 MyBot
-python first_card_bot.py abc123 MyBot 192.168.1.50 7878
+# Python — plays the first card every turn
+python python/first_card_bot.py <game_id> <your_name>
 
-# sushi_go_client.py — host and port first
-python sushi_go_client.py <host> <port> <game_id> <player_name>
-python sushi_go_client.py localhost 7878 abc123 MyBot
+# Python — priority-based strategy
+python python/sushi_go_client.py localhost 7878 <game_id> <your_name>
+
+# JavaScript — priority-based strategy
+node javascript/sushi_go_client.js localhost 7878 <game_id> <your_name>
 ```
 
-## Implementing Your Strategy
-
-Edit the `choose_card` method in `sushi_go_client.py`:
-
-```python
-def choose_card(self, hand: list[str]) -> int:
-    """
-    Choose which card to play.
-
-    Args:
-        hand: List of card names (e.g., ["Tempura", "Salmon Nigiri", "Pudding"])
-
-    Returns:
-        Index of the card to play (0-based)
-    """
-    # Your strategy here!
-    return 0
+To join a game on someone else's laptop
+```bash
+python first_card_bot.py <ip_address> <port> <game_id> <your_name>
 ```
 
-The default implementation uses a simple priority list. Replace it with your own logic.
+Replace `<game_id>` with the game ID shown in the web UI or given to you by the tournament organizer.
 
-## Key Patterns
+## Running a Test Server
 
-### Line-buffered reading
+First, load the server image from the LAN:
 
-`first_card_bot.py` uses `socket.makefile('r')` for reliable line-by-line reading:
-
-```python
-sock_file = sock.makefile('r')
-msg = sock_file.readline().strip()
+```bash
+curl -O https://joes-macbook.tail10906.ts.net/sushi-go-test.tar && docker load < sushi-go-test.tar
 ```
 
-### HAND = your turn
+or 
 
-Only send `PLAY` when you receive a `HAND` message. The server sends `HAND` exactly when it's time for you to act — not as a status update.
+```bash
+curl -O http://joes-macbook.local:9090/sushi-go-test.tar && docker load < sushi-go-test.tar
+```
 
-### State tracking
 
-`sushi_go_client.py` tracks played cards, chopsticks, and wasabi state for you. Use `self.state` to make smarter decisions.
+Then start it:
 
-## Protocol
+```bash
+docker run -it -p 7878:7878 -p 8080:8080 sushi-go-test
+```
 
-See [../PROTOCOL.md](../PROTOCOL.md) for the full protocol specification.
+- **Port 7878** — TCP game port (where your bot connects)
+- **Port 8080** — Web UI for creating games and spectating
+
+Open http://localhost:8080 in a browser, create a game, then run your bot with the game ID.
+
+## Building Your Bot
+
+The basic pattern every bot follows:
+
+1. Connect to the server via TCP
+2. Send `JOIN <game_id> <your_name>`
+3. Send `READY`
+4. Wait for messages in a loop
+5. When you receive `HAND`, choose a card and send `PLAY <index>`
+6. Repeat until `GAME_END`
+
+See `python/first_card_bot.py` for a minimal working example (~30 lines of game logic).
+
+## Customizing
+
+The starter clients include a strategy function you can edit:
+
+- **Python:** `choose_card(hand)` in `sushi_go_client.py`
+- **JavaScript:** `chooseCard(hand)` in `sushi_go_client.js`
+
+The `hand` parameter is a list of card names (e.g., `["Tempura", "Salmon Nigiri", "Pudding"]`). Return the index of the card you want to play.
+
+Or, write your bot from scratch — all you need is a TCP socket and the protocol below.
+
+## Language Guides
+
+- [Python Guide](python/README.md)
+- [JavaScript Guide](javascript/README.md)
+
+## Protocol Reference
+
+See [PROTOCOL.md](PROTOCOL.md) for the full protocol specification, including:
+
+| You Send | Server Sends |
+|----------|-------------|
+| `JOIN <game_id> <name>` | `WELCOME <game_id> <id> <token>` |
+| `READY` | `OK` |
+| `PLAY <index>` | `OK` |
+| `CHOPSTICKS <i> <j>` | `OK` |
+| `REJOIN <token>` | `REJOINED <game_id> <id>` |
+| | `HAND 0:Card 1:Card ...` (your turn) |
+| | `PLAYED ...` (turn results) |
+| | `ROUND_END ...` / `GAME_END ...` |
