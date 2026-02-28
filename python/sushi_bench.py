@@ -77,6 +77,7 @@ def run_bench():
             name = f"{script.split('.')[0]}_{idx}"
             # Path handling for Windows vs Linux
             script_path = os.path.normpath(script) if WINDOWS_MODE else script
+
             cmd = [PYTHON_CMD, script_path, SERVER_HOST, str(SERVER_PORT), game_id, name]
             procs.append((idx, subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)))
 
