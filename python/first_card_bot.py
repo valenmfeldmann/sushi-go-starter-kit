@@ -17,7 +17,7 @@ import socket
 import sys
 import time
 
-delay_multiplier = 0.001
+delay_multiplier = 0
 
 
 def main():

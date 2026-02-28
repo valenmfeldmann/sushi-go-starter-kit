@@ -28,6 +28,8 @@ HOST = "localhost"
 TCP_PORT = 7878
 WEB_PORT = 8080
 
+delay_mult_startup = 0.1
+
 # Bot scripts in priority order; rotate through them to fill slots
 BOT_SCRIPTS = [
     "b_v_sushi_go_client.py",
@@ -80,7 +82,7 @@ def launch_bots(game_id: str, num_players: int) -> list[subprocess.Popen]:
         name = BOT_NAMES[i % len(BOT_NAMES)]
         cmd = [sys.executable, str(HERE / script), game_id, name]
         # Small stagger so they don't all hammer the server at once
-        time.sleep(0.15)
+        time.sleep(0.15*delay_mult_startup)
         # Force UTF-8 so box-drawing chars in the server banner don't crash on Windows
         env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
         proc = subprocess.Popen(
