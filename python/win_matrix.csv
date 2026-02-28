@@ -1,5 +1,6 @@
-,first_card_bot,sushi_go_client,sushi_go_client,b_v_sushi_go_client_card_aware_TEST1
-first_card_bot,0,1,0,0
-sushi_go_client,9,0,7,2
-sushi_go_client,10,3,0,1
-b_v_sushi_go_client_card_aware_TEST1,10,8,9,0
+,b_v_sushi_go_client,b_v_sushi_go_client_card_aware_TEST1,b_v_sushi_go_client_card_aware_TEST2_v,b_v_sushi_go_client_card_aware_TEST5_v,b_v_sushi_go_client_card_aware_TEST1_B_Manual
+b_v_sushi_go_client,0,11,7,5,11
+b_v_sushi_go_client_card_aware_TEST1,8,0,7,7,11
+b_v_sushi_go_client_card_aware_TEST2_v,11,11,0,9,10
+b_v_sushi_go_client_card_aware_TEST5_v,14,13,9,0,11
+b_v_sushi_go_client_card_aware_TEST1_B_Manual,9,8,10,9,0
