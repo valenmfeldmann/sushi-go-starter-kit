@@ -218,6 +218,7 @@ class SushiGoClient:
             if self.state:
                 self.state.played_cards = []
         elif message.startswith("GAME_END"):
+            print(f"FINAL_RESULT: {message}")  # <-- ADD THIS LINE
             print("Game over!")
             return False
         elif message.startswith("WAITING"):
