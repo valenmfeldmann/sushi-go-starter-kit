@@ -123,7 +123,9 @@ class SushiGoClient:
 
     def run(self, game_id: str, player_name: str):
         self.connect()
-        self.send(f"JOIN {game_id} {player_name}")
+        # self.send(f"JOIN {game_id} {player_name}")
+        self.send(f"TOURNEY {game_id} {player_name}")
+
 
         running = True
         while running:

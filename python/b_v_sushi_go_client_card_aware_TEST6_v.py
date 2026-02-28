@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import random
 import re
 import socket
 import sys
@@ -34,26 +33,14 @@ class SushiGoClient:
         self.state: Optional[GameState] = None
         self._recv_buffer = ""
 
-        # --- Your Exact Priority Strategy ---
+        # Base Priorities (used when no tactical override is triggered)
         self.PRIORITIES = {
-            (1, "early"): ["Sashimi", "Tempura", "Wasabi", "Squid Nigiri", "Salmon Nigiri", "Maki Roll (3)", "Dumpling",
-                           "Pudding", "Maki Roll (2)", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (1, "mid"): ["Tempura", "Squid Nigiri", "Sashimi", "Maki Roll (3)", "Wasabi", "Salmon Nigiri", "Dumpling",
-                         "Pudding", "Maki Roll (2)", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (1, "late"): ["Tempura", "Squid Nigiri", "Salmon Nigiri", "Sashimi", "Dumpling", "Maki Roll (3)",
-                          "Maki Roll (2)", "Pudding", "Wasabi", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (2, "early"): ["Wasabi", "Squid Nigiri", "Salmon Nigiri", "Maki Roll (3)", "Maki Roll (2)", "Tempura",
-                           "Sashimi", "Dumpling", "Pudding", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (2, "mid"): ["Squid Nigiri", "Salmon Nigiri", "Wasabi", "Tempura", "Sashimi", "Maki Roll (3)",
-                         "Maki Roll (2)", "Dumpling", "Pudding", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (2, "late"): ["Squid Nigiri", "Salmon Nigiri", "Tempura", "Dumpling", "Pudding", "Maki Roll (3)",
-                          "Maki Roll (2)", "Sashimi", "Wasabi", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (3, "early"): ["Pudding", "Wasabi", "Squid Nigiri", "Salmon Nigiri", "Maki Roll (3)", "Maki Roll (2)",
-                           "Tempura", "Sashimi", "Dumpling", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (3, "mid"): ["Pudding", "Squid Nigiri", "Salmon Nigiri", "Wasabi", "Dumpling", "Maki Roll (3)", "Tempura",
-                         "Maki Roll (2)", "Sashimi", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
-            (3, "late"): ["Pudding", "Squid Nigiri", "Salmon Nigiri", "Dumpling", "Tempura", "Maki Roll (3)",
-                          "Maki Roll (2)", "Sashimi", "Wasabi", "Egg Nigiri", "Maki Roll (1)", "Chopsticks"],
+            (1, "early"): ["Squid Nigiri", "Wasabi", "Salmon Nigiri", "Tempura", "Maki Roll (3)", "Dumpling", "Pudding",
+                           "Sashimi"],
+            (2, "early"): ["Squid Nigiri", "Wasabi", "Salmon Nigiri", "Pudding", "Maki Roll (3)", "Tempura", "Dumpling",
+                           "Sashimi"],
+            (3, "early"): ["Pudding", "Squid Nigiri", "Wasabi", "Salmon Nigiri", "Maki Roll (3)", "Tempura", "Dumpling",
+                           "Sashimi"]
         }
 
     def connect(self):
@@ -73,7 +60,6 @@ class SushiGoClient:
 
     def handle_message(self, message: str):
         if message.startswith("HAND"):
-            # Parse hand
             payload = message[len("HAND "):]
             cards = [m.group(2).strip() for m in re.finditer(r"(\d+):(.*?)(?=\s\d+:|$)", payload)]
             if self.state: self.state.hand = cards
@@ -84,51 +70,60 @@ class SushiGoClient:
                 self.state.played_cards = []
                 self.state.opponent_cards = {}
         elif message.startswith("PLAYED"):
-            # Track opponents
             payload = message[7:]
             for seg in payload.split("; "):
                 if ":" in seg:
                     name, cards_str = seg.split(":", 1)
                     if self.state and name.strip() != self.state.player_name:
                         cards = [c.strip() for c in cards_str.split(",") if c.strip()]
-                        self.state.opponent_cards.setdefault(name.strip(), []).extend(cards)
+                        # Overwrite or extend opponent tracking
+                        self.state.opponent_cards[name.strip()] = cards
             if self.state: self.state.turn += 1
         elif message.startswith("GAME_END"):
-            # CRITICAL: Benchmark needs this exact line to record scores
             print(f"FINAL_RESULT: {message}")
             return False
         return True
 
     def choose_card(self, hand: list[str]) -> int:
-        phase = "early" if self.state.turn <= 3 else "mid" if self.state.turn <= 7 else "late"
-        priority = list(self.PRIORITIES.get((self.state.round, phase), self.PRIORITIES[(1, "early")]))
+        # 1. TACTICAL OVERRIDE: Hate Drafting
+        # If an opponent is one card away from a high-value set (Sashimi or Tempura), steal it.
+        for opponent, cards in self.state.opponent_cards.items():
+            if cards.count("Sashimi") % 3 == 2 and "Sashimi" in hand:
+                return hand.index("Sashimi")
+            if cards.count("Tempura") % 2 == 1 and "Tempura" in hand:
+                return hand.index("Tempura")
 
-        # Wasabi / Completion / Sashimi Logic (Same as your previous design)
-        # Check for Wasabi
-        if any(c == "Wasabi" for c in self.state.played_cards) and not any(
-                c in ("Egg Nigiri", "Salmon Nigiri", "Squid Nigiri") for c in self.state.played_cards):
+        # 2. TACTICAL OVERRIDE: Self-Completion
+        if self.state.played_cards.count("Sashimi") % 3 == 2 and "Sashimi" in hand:
+            return hand.index("Sashimi")
+        if self.state.played_cards.count("Tempura") % 2 == 1 and "Tempura" in hand:
+            return hand.index("Tempura")
+
+        # 3. Wasabi Synergy
+        if "Wasabi" in self.state.played_cards and not any(
+                n in self.state.played_cards[-1:] for n in ["Squid Nigiri", "Salmon Nigiri", "Egg Nigiri"]):
             for n in ["Squid Nigiri", "Salmon Nigiri", "Egg Nigiri"]:
-                if n in hand:
-                    priority.insert(0, priority.pop(priority.index(n)))
-                    break
+                if n in hand: return hand.index(n)
 
-        # Completion (Sashimi/Tempura)
-        if phase in ("mid", "late"):
-            if self.state.played_cards.count("Sashimi") % 3 == 2 and "Sashimi" in hand:
-                priority.insert(0, priority.pop(priority.index("Sashimi")))
-            elif self.state.played_cards.count("Tempura") % 2 == 1 and "Tempura" in hand:
-                priority.insert(0, priority.pop(priority.index("Tempura")))
+        # 4. Fallback to Dynamic Priority
+        phase = "early" if self.state.turn <= 3 else "mid" if self.state.turn <= 7 else "late"
+        priority = list(self.PRIORITIES.get((self.state.round, "early"), self.PRIORITIES[(1, "early")]))
 
+        # 5. TACTICAL OVERRIDE: Avoid contested Sashimi
+        # If opponents are already hoarding Sashimi, it's too risky to start now.
+        if self.state.opponent_total("Sashimi") > 2 and self.state.played_cards.count("Sashimi") == 0:
+            if "Sashimi" in priority: priority.remove("Sashimi")
+
+        # Select best available
         for card in priority:
             if card in hand: return hand.index(card)
+
+        # Ultimate fallback
         return 0
 
     def run(self, game_id: str, player_name: str):
         self.connect()
-        # self.send(f"JOIN {game_id} {player_name}")
-        self.send(f"TOURNEY {game_id} {player_name}")
-
-
+        self.send(f"JOIN {game_id} {player_name}")
         running = True
         while running:
             message = self.receive()
@@ -136,9 +131,7 @@ class SushiGoClient:
                 parts = message.split()
                 self.state = GameState(game_id=parts[1], player_id=int(parts[2]), hand=[], player_name=player_name)
                 self.send("READY")
-
             running = self.handle_message(message)
-
             if message.startswith("HAND") and self.state and self.state.hand:
                 idx = self.choose_card(self.state.hand)
                 played_card = self.state.hand[idx]
@@ -146,12 +139,20 @@ class SushiGoClient:
                 self.state.played_cards.append(played_card)
 
 
+
 if __name__ == "__main__":
-    # FIX: Match the benchmark's 4-argument call
-    if len(sys.argv) != 5:
+    import sys
+    # Safety check: ensures all 4 arguments required by the benchmark are present
+    if len(sys.argv) < 5:
         print("Usage: python script.py <host> <port> <game_id> <player_name>")
         sys.exit(1)
 
-    host, port, gid, name = sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4]
+    # Unpack arguments provided by the benchmarker
+    host = sys.argv[1]
+    port = int(sys.argv[2])
+    gid = sys.argv[3]
+    name = sys.argv[4]
+
+    # Initialize and run the adaptive tactician
     client = SushiGoClient(host, port)
     client.run(gid, name)

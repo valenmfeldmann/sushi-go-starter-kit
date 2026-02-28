@@ -153,23 +153,35 @@ SERVER_PORT = 7878
 WEB_URL = "http://localhost:8080/api/games"
 # Ensure all bot files are in the same directory as this script
 
+# Good
+# b_v_sushi_go_client_card_aware_TEST3_B | 136
+# b_v_sushi_go_client_card_aware_TEST1_B_Manual | 134
+
+# b_v_sushi_go_client_card_aware_TEST2_v | 108
+# b_v_sushi_go_client_card_aware_TEST5_v | 103
+
+
+
 STRATEGIES = [
-    "b_v_sushi_go_client.py",
-    "b_v_sushi_go_client_card_aware_TEST1.py",
-    "b_v_sushi_go_client_card_aware_TEST2_v.py",
-    # "b_v_sushi_go_client_card_aware_TEST3_v.py",
-    # "b_v_sushi_go_client_card_aware_TEST4_v.py",
-    "b_v_sushi_go_client_card_aware_TEST5_v.py",
+    # "b_v_sushi_go_client.py",
+    # "b_v_sushi_go_client_card_aware_TEST1.py",
+    "b_v_sushi_go_client_card_aware_TEST2_v.py", # Strong
+    "b_v_sushi_go_client_card_aware_TEST5_v.py", # Strong
     "b_v_sushi_go_client_card_aware_TEST1_B_Manual.py",
-
-
-    # "b_v_sushi_go_client_card_aware_TEST2_B.py",
-    # "b_v_sushi_go_client_card_aware_TEST3_B.py",
-    # "b_v_sushi_go_client_card_aware_TEST4_B.py",
-    # "b_v_sushi_go_client_card_aware_TEST5_B.py",
+    "b_v_sushi_go_client_card_aware_TEST3_B.py",
+    "b_v_sushi_go_client_card_aware_TEST6_v.py"
 ]
 
-NUM_ROUNDS = 20  # Increase this for better data!
+# Bad
+# "b_v_sushi_go_client_card_aware_TEST3_v.py",
+# "b_v_sushi_go_client_card_aware_TEST4_v.py",
+# "b_v_sushi_go_client_card_aware_TEST4_B.py",
+# "b_v_sushi_go_client_card_aware_TEST5_B.py",
+# "b_v_sushi_go_client_card_aware_TEST2_B.py",
+
+
+
+NUM_ROUNDS = 50  # Increase this for better data!
 
 sleep_mult_bench = 0.01
 
